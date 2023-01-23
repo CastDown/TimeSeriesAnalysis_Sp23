@@ -1,0 +1,36 @@
+---
+title: "0119_Intro to TSA and R"
+author: "Liwei Jiang"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+## Basic knowledge of R
+
+length() #is same as ncol in R, not nrow
+
+```{r cars}
+summary(cars)
+```
+
+## Recap of Stats and TSA
+
+Autocorrelation is important because if we have great autocorrelation, we don't need many covariates then.
+
+For autocorrelation, we do many lags. Sometimes we will do 40 lags.
+
+***Stationary process***: distribution of observations doesn't change along with time. Therefore, the mean, variance, and autocovariance functions remain constant. 
+
+Question: If so, that means Yt will stay constant, right? 
+Answer: I asked this question but Luana said no. We will cover this in Jan 24. Let's see. 
+
+***White Noise Series***: independen, identically distributed (i.i.d) random variable. E(et) = 0, and autocorrelation & autocovariance = 0.
+
+So, when doing modeling, check the distribution of residues. If mean and autocovariance are 0 or close to 0, that justifies the goodness of the model.
+
+```{r}
+lagged = zlag(dataset) #用来求lag的series的function
+cor()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
