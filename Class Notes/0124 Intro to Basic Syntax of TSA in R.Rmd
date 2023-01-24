@@ -8,7 +8,7 @@ editor_options:
 ---
 ###Introduction to TSA. 
 
-How to push????
+How to push????????
 
 Stationary process:
 ***white Noise*** is an example of a stationary process
