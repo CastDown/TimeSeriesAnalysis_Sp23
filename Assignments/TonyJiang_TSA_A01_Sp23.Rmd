@@ -7,7 +7,7 @@ geometry: margin=2.54cm
 ---
 
 ## Directions
-s
+ss
 Before making any edits to this file, please rename it such that it includes your first and last name (e.g., "LuanaLima_TSA_A01_Sp23.Rmd")
 
 Once you have this renamed file open in RStudio, the first thing you will do is replace "Student Name" on line 3 with your name. 

@@ -1,0 +1,102 @@
+---
+title: "0124_Intro to R Markdown"
+author: "Liwei Jiang"
+date: "`r Sys.Date()`"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+###Introduction to TSA. 
+
+How to push????
+
+Stationary process:
+***white Noise*** is an example of a stationary process
+
+Autocorrelation Function (ACF): 
+the correlation between Yt and Yt-h. 到底是就这两个数字，还是lag为h的两个series呢？
+
+Partial Autocorrelation Fuction (PACF): 
+How to get the correlation between Yt and Yt-h without the effect of intermediate terms 中间项 (Yt-1, Yt-2,...,Yt-h+1). So we can get a pure effect of Yt on Yt-h. Then we can make the estimate unbiased (think about a regression). 
+
+***Some Notes***
+ACF can show seasonality...
+For h=0, ACF and PACF are always 1. 因为Yt = Yt
+PACF is always smaller than ACF (effects are tuled out)
+
+Auto-regressive: 
+Regress on previous Y values to project future unknown Y values.
+
+```{r}
+##preparation work
+library(lubridate)
+library(ggplot2)
+```
+完成了准备工作，那就load数据啦
+```{r}
+#first check the current path to see how to edit file path
+getwd()
+
+#load dataset
+## "."一个点就是简略代表了现在的在使用的path，之后直接再加上需要表明的就好了
+## ".."两个点就是从现在getwd()的path中往上返回一层
+
+df <- read.table(file="./Data/inflowtimeseries.txt",header=FALSE,skip=0)
+
+df = df[, 1:5] #只取前五列
+
+colnames(df) = c("Month", "Year", "HP1", "HP2", "HP3") #重命名前五列的列名
+
+#简单的查看一下数据
+head(df) ##前六列
+str(df) #看看结构，都是什么类型的
+
+```
+
+## 如果整理dataset使其适合TSA，用lubridate()
+```{r}
+
+#接下来把前两列合成一列，sep是分隔符，合成了month-year的形式
+my_date = paste(df[, 1], df[, 2], sep = "-")
+#把合成的一列指定为日期类型，因为TSA要有日期啦
+my_date = my(my_date)
+#把合成的列加到原来的data frame里
+df <- cbind(my_date,df[,3:5]) #这里把前两列删掉了
+head(df)
+
+#以下是一些怎么改变日期存储形式的function
+format(my_date[1],format="%y-%m")
+format(my_date[1],format="%Y-%m")
+format(my_date[1],format="%Y-%b")
+```
+
+###接下来画图
+```{r}
+plot(df[,"HP1"], type = "l", colour = "red", ylab = "", xlab = "")
+abline(h = mean(df[,"HP1"]), col = "blue")
+
+#怎么overlay两个图
+plot(df[,"HP1"], type = "l", col = "red", ylab = "", xlab = "")
+lines(df[,"HP2"], type = "l", col = "red", ylab = "", xlab = "")
+
+#ggplot
+ggplot(data = df, aes(x = my_date, y = Inflow)) + 
+  geom_line(aes(y = HP1, col = "HP1")) +
+  geom_line(aes(y = HP2, col = "HP2")) +
+  geom_line(aes(y = HP3, col = "HP3")) 
+
+```
+
+## 把dataframe转换为time series objects，这样好做TSA
+```{r}
+ts_df = ts(data = df[, 2:ncol(df)], start = c(1933, 1))
+
+head(ts_df)
+```
+
+###求autocorrelation
+```{r}
+acf(ts_df[, 1], lag.max = 10) #最大的lag为10
+pacf(ts_df[, 1])
+
+```
