@@ -1,7 +1,11 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2023"
 subtitle: "Assignment 1 - Due date 01/24/23"
+<<<<<<< HEAD:Assignments/TonyJiang_TSA_A01_Sp23.Rmd
 author: "Tony Jiang"
+=======
+author: "Luana"
+>>>>>>> 7ab51001fb26c7f98e21f745884a2fb9b769989d:Assignments/TSA_A01_Sp22.Rmd
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -19,9 +23,13 @@ When you have completed the assignment, **Knit** the text and code into a single
 
 Q1. What are your previous experiences with time series analysis, R, and Git? 
 
+<<<<<<< HEAD:Assignments/TonyJiang_TSA_A01_Sp23.Rmd
 > Answer: I have learned time series analysis in my Stats class at Duke. But the class only covered basic knowledge of time series analysis. 
           I self-learned R a little bit during this winter break. I know some basic syntax, funtions, and packages, like ggplot2, for..in.... But I have short previous coding exprience in my undergrad (JAVA). So, i am relatively familiar with coding in general and R. 
           I have no experience in Git. So, this is may be the biggest challenge for me at the beginning of this semester.
+=======
+> Answer: None
+>>>>>>> 7ab51001fb26c7f98e21f745884a2fb9b769989d:Assignments/TSA_A01_Sp22.Rmd
 
 
 Q2. (Only if you choose to use git) Provide a link below to your forked course repository in GitHub. Make sure you have pulled all recent changes from the course repository and that you have updated your course README file as instructed on the recorded video "Getting started with Git and Github". 
