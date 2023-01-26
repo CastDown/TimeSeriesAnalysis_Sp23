@@ -1,0 +1,52 @@
+---
+title: '0126 Importing Data and Trend Modeling'
+author: "Liwei Jiang"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r cars}
+setwd("/Users/jiangliwei/Documents/Semester 4/Time Series Anaysis for Energy Data/Forked Repository/Forked TSA Spring 2023")
+library(forecast)
+library(Kendall)
+library(tseries)
+library(lubridate)
+library(ggplot2)
+library(readxl)
+```
+
+## Importing data
+
+```{r pressure, echo=FALSE}
+df <- read_xlsx(path = "./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", col_names = TRUE, skip = 10, sheet = 1)
+```
+
+## Sources of variations
+1. Calendar: seasons, holidays, and weekends
+  Like seasonality: usage of electronic devices is constantly higher during weekends than weekdays
+  ***R can automatically identify the length of seasonality once we determine the frequency, like 365days.***
+
+2. Natural Calamities: earthquake, epidemic, flood, drought
+***They should be incorporated in white noise, since they are random and we hope the mean of them is 0.***
+
+## Trend Component: Linear or non-linear
+1. Long-term tendency: increase or decrease
+***We should always try to use linear trend first though it doesn't seem like linear will fit. because if linear can produce similar results as non-linear. Why bother ourselves with more complex methods?***
+
+  ## Model linear trend:
+  use Ordinary Least Square (OLS) method. Then we need to remove the trend, by use the ovservation to deduct fitted values. 
+  
+  ##Moving Average for Non-Linear Trend Estimation (Only usable for short term forecasting)
+  Smooth out fluctuation in data to show a pattern or trend more clearly. 
+  I have questions about determining order.
+```{r}
+##function to use for linear regression
+df %>% lm(formula = Y ~ X, ...)
+```
+
