@@ -131,7 +131,7 @@ Total biomass energy production has strong autocorrelation for all lags, though 
 Total renewable energy production has a weak but obvious cyclical pattern, with an interval of 12. 
 Hydroelectric power consumption has a strong seasonality, which can be attributed to the seasonality of natural water. E.g. more in summer and less in winter. 
 
-```{r}
+```{r, out.width= "50%", out.height= "50%" }
 for (i in c(1:3)){
 fig = acf(ts_df1[, a[i]], lag.max = 40, plot = FALSE)
 fig$series <- NULL 
