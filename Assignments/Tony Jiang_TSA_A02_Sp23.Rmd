@@ -13,11 +13,13 @@ editor_options:
 R packages needed for this assignment:"forecast","tseries", and "dplyr". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
 ```{r}
-#Load/install required package here
+#Load/install required packages here
+
 library(forecast)
 library(tseries)
 library(dplyr)
 library(readxl)
+
 ```
 
 
@@ -33,6 +35,7 @@ df1 <- read_xlsx("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_
 df2 <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source-Edit.csv", header=TRUE,dec = ".",sep=",",stringsAsFactors = TRUE) 
 
 df1 = df1[-1,]
+
 ```
 
 
@@ -40,9 +43,15 @@ df1 = df1[-1,]
 You will work only with the following columns: Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption. Create a data frame structure with these three time series only. Use the command head() to verify your data.
 
 ```{r}
-col_names = c("Total Biomass Energy Production", "Total Renewable Energy Production", "Hydroelectric Power Consumption")
+
+col_names = c("Total Biomass Energy Production", 
+              "Total Renewable Energy Production", 
+              "Hydroelectric Power Consumption")
+
 df1_red = subset(df1, select = col_names)
+
 head(df1_red)
+
 ```
 
 
@@ -50,7 +59,9 @@ head(df1_red)
 Transform your data frame in a time series object and specify the starting point and frequency of the time series using the function ts().
 
 ```{r}
+
 ts_df1 = ts(df1_red, start = c(1973, 1), frequency = 12)
+
 head(ts_df1)
 ```
 
@@ -59,26 +70,33 @@ head(ts_df1)
 Compute mean and standard deviation for these three series.
 
 ```{r}
+
 a = c(colnames(ts_df1))
-mean_list = data.frame(c("Mean of Biomass Energy Production", 
-                   "Mean of Renewable Energy Production", 
-                   "Mean of Hydroelectric Power Consumption"), 
-                 c(mean(ts_df1[, "Total Biomass Energy Production"]),
-                   mean(ts_df1[, "Total Renewable Energy Production"]),
-                   mean(ts_df1[, "Hydroelectric Power Consumption"])
-                   )
-                 )
+
+mean_list = data.frame(
+  c("Mean of Biomass Energy Production", 
+    "Mean of Renewable Energy Production",
+    "Mean of Hydroelectric Power Consumption"),
+  c(mean(ts_df1[, "Total Biomass Energy Production"]),
+    mean(ts_df1[, "Total Renewable Energy Production"]),
+    mean(ts_df1[, "Hydroelectric Power Consumption"])
+    )
+  )
+
 mean_list
 
-std_list = data.frame(c("Std of Biomass Energy Production", 
-                   "Std of Renewable Energy Production", 
-                   "Std of Hydroelectric Power Consumption"), 
-                 c(sd(ts_df1[, "Total Biomass Energy Production"]),
-                   sd(ts_df1[, "Total Renewable Energy Production"]),
-                   sd(ts_df1[, "Hydroelectric Power Consumption"])
-                   )
-                 )
+std_list = data.frame(
+  c("Std of Biomass Energy Production",
+    "Std of Renewable Energy Production", 
+    "Std of Hydroelectric Power Consumption"),
+  c(sd(ts_df1[, "Total Biomass Energy Production"]),
+    sd(ts_df1[, "Total Renewable Energy Production"]),
+    sd(ts_df1[, "Hydroelectric Power Consumption"])
+    )
+  )
+
 std_list
+
 ```
 
 
@@ -92,11 +110,14 @@ Display and interpret the time series plot for each of these variables. Try to m
 
 ```{r}
 
-for (i in c(1:3)){ 
+for (i in c(1:3)) { 
+  
 plot(ts_df1[ , a[i]], type = "l",
      xlab = "Time",
      ylab = a[i])
+  
 abline(h=mean_list[[i,2]], col = "red")
+
 title(main = paste("Time Series Plot of \n",a[i]), line = 0.2)
 }
 
@@ -114,7 +135,9 @@ Hydroeletric power consumption and renewable energy production are almost not co
 
 
 ```{r}
+
 cor(ts_df1)
+
 ```
 
 
@@ -131,12 +154,18 @@ Total biomass energy production has strong autocorrelation for all lags, though 
 Total renewable energy production has a weak but obvious cyclical pattern, with an interval of 12. 
 Hydroelectric power consumption has a strong seasonality, which can be attributed to the seasonality of natural water. E.g. more in summer and less in winter. 
 
-```{r}
-for (i in c(1:3)){
+```{r, out.width= "50%", out.height= "50%" }
+
+for (i in c(1:3)) {
+  
 fig = acf(ts_df1[, a[i]], lag.max = 40, plot = FALSE)
+
 fig$series <- NULL 
-fig$lag[1:40] <- c(1:40)
-fig %>% plot(main = paste("Autocorrelation of ", a[i]), xlab = "Lag(month)")
+
+fig$lag[1:41] = c(0:40)
+
+fig %>% plot(main = paste("Autocorrelation of ", a[i]),
+             xlab = "Lag(month)")
 }
 ```
 
@@ -150,11 +179,17 @@ Also, seasonality in each series becomes less obvious in partial autocorrelation
 Moreover, some lags have positive autocorrelation but negative partial correlation, which may indicate that the true relationship between two series are biased by autocorrelation since the effects of intermediate series are included.
 
 ```{r, out.width= "50%", out.height= "50%" }
-for (i in c(1:3)){
+
+for (i in c(1:3)) {
+  
 fig1 = pacf(ts_df1[, a[i]], lag.max = 40, plot = FALSE)
+
 fig1$series <- NULL
+
 fig1$lag[1:40] <- c(1:40)
-fig1 %>% plot(, main = paste("Partial Autocorrelation of ", a[i]), xlab = "Lags(month)")
+
+fig1 %>% plot(, main = paste("Partial Autocorrelation of ", a[i]),
+              xlab = "Lags(month)")
 }
 ```
 
