@@ -31,10 +31,20 @@ library(forecast)
 library(tseries)
 library(Kendall)
 library(readxl)
+<<<<<<< HEAD
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 
+=======
+<<<<<<< HEAD
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+=======
+
+>>>>>>> 00f2f28160d8b288489269538359ffb16426ee26
+>>>>>>> 480129d9b6cdfc6c66142c0976e42a01d8e2963b
 ```
 
 ###Load the dataset
