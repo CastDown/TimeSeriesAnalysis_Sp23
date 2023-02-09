@@ -34,6 +34,7 @@ library(readxl)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+
 ```
 
 ###Load the dataset
@@ -172,10 +173,69 @@ Set aside the detrended series and consider the original series again from Q1 to
 ### Q6
 Do the series seem to have a seasonal trend? Which serie/series? Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to this/these time series. Ask R to print the summary of the regression. Interpret the regression output. Save the regression coefficients for further analysis.
 
+***Answers***: among three series, hydroelectric power consumption has the strongest seasonality. Therefore, I will use this series to analyze its seasonality. From the results, we can see most seasonal dummies are statistically significant at 5% or 1% confidence level, which demonstrates the strong seasonality of this series. 
+
+```{r}
+
+dummies <- seasonaldummy(ts_renewables[,1]) #create seasonal dummy variables
+
+lm_season <- lm(formula = ts_renewables[,3] ~ dummies) #store regression result to a list
+
+summary(lm_season)
+
+cf_season <- lm_season$coefficients[2:12] #store slopes of seasonal dummy variables
+
+beta0 <- lm_season$coefficients[1] #store intercept of the regression result
+
+```
+
 ### Q7
 Use the regression coefficients from Q6 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
 
+***Answer***: I plotted original series and deseasoned series together in the same graph. It is hard for us to tell the difference between two plots, except for changes in numbers. The overall trend is still fuzzy after being deseasoned. Maybe we should resort to acf and pacf to explore potential change in seasonality of this series. 
+
+```{r}
+ggplot(data = lm_season, aes(y = lm_season$residuals, x = t)) + 
+  geom_line() +
+  geom_line(aes(y = renewables_sub$`Hydroelectric Power Consumption`), col = "green")
+
+#residuals in regression results are already the deseasoned series we want. So I use residuals to plot. Below is the code of using coefficients to calculate the deseasoned series:
+
+# hydro_seas_comp=array(0,nrow(ts_renewables))
+
+# for (i in 1:nrow(ts_renewables)){
+ #  hydro_seas_comp[i] = beta0 + cf_season%*%dummies[i,]
+# }
+
+# hydro_deseason = ts_renewables[,3] - hydro_seas_comp
+
+```
+
 ### Q8
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. Did the plots change? How?
+
+***Answer***: The plots changed. Compared to previous acf and pacf, there is no strong seasonality now. ACF shows a downward trend. Most PACF are not significant, which may imply stationarity. 
+
+```{r}
+
+ts_deseason_hydro = ts(lm_season$residuals, start = c(1973, 1), frequency = 12) 
+#to plot acf and pacf, I need to convert residuals into a time series object
+
+par(mfrow = c(1,3)) #I will plot time series plot, acf, and pacf together
+
+plot(y = lm_season$residuals, x = t, type = "l", 
+     main = "Plot of Deseason Hydroelectric /n Energy Consumption")
+
+acf(x = ts_deseason_hydro, lag.max = 40, xlab = "Time", ylab = "ACF",
+    main = "Autocorrelation of Deseason /n Hydroelectric Energy Consumption", 
+    ylim = c(-1, 1)
+    )
+
+pacf(x = ts_deseason_hydro, lag.max = 40, xlab = "Time", ylab = "PACF",
+    main = "Partial Autocorrelation of Deseason /n Hydroelectric Energy Consumption", 
+    ylim = c(-1, 1)
+    )
+```
+
 
 
