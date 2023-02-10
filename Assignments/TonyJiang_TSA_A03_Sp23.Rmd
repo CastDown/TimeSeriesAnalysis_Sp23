@@ -44,9 +44,11 @@ library(ggplot2)
 ###Load the dataset
 
 ```{r}
-renewables <- read_xlsx("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", skip = 10)
+renewables <- read_xlsx("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", 
+                        skip = 10)
 
-read_col_names <- read_xlsx(path = "./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", col_names = FALSE, skip = 10, n_max = 1)
+read_col_names <- read_xlsx(path = "./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx", 
+                            col_names = FALSE, skip = 10, n_max = 1)
 
 colnames(renewables) <- read_col_names
 
@@ -63,7 +65,8 @@ head(renewables_sub)
 
 ###Coerce the dataset as time series data
 ```{r}
-renewables_sub[, c(1:3)] = sapply(renewables_sub[, c(1:3)], as.numeric) #convert columns to numeric. Otherwise numbers will be altered by ts().
+renewables_sub[, c(1:3)] = sapply(renewables_sub[, c(1:3)], as.numeric) 
+#convert columns to numeric. Otherwise numbers will be altered by ts().
 
 ts_renewables <- ts(renewables_sub, start = c(1973, 1), frequency = 12)
 
@@ -79,14 +82,19 @@ Create a plot window that has one row and three columns. And then for each objec
 ```{r}
 
 for (i in 1:3){
+  
   par(mfrow = c(1,3))
   
   plot(ts_renewables[,i], main = paste("Time Series Plot of \n", col_names[i]), 
        xlab = "Years", ylab = col_names[i])
   
-  acf(ts_renewables[,i], lag.max = 40, main = paste("Autocorrelation of \n", col_names[i]), ylim = c(-1, 1))
+  acf(ts_renewables[,i], lag.max = 40, ylim = c(-1, 1), 
+      main = paste("Autocorrelation of \n", col_names[i])
+      )
   
-  pacf(ts_renewables[,i], lag.max = 40, main = paste("Autocorrelation of \n", col_names[i]), ylim = c(-1, 1))
+  pacf(ts_renewables[,i], lag.max = 40, ylim = c(-1, 1), 
+       main = paste("Autocorrelation of \n", col_names[i])
+       )
 }
 
 ```
@@ -154,16 +162,19 @@ Plot ACF and PACF for the detrended series and compare with the plots from Q1. D
 
 for (i in 1:3){
   par(mfrow = c(1,3))
-  plot(detrend_renewables[,i], main = paste("Time Series Plot of \n Detrended", col_names[i]), 
+  
+  plot(detrend_renewables[,i], main = paste("Time Series Plot of Detrended \n", 
+                                            col_names[i]), 
        xlab = "Years", ylab = col_names[i])
+  #I still add the plot for the detrended series because I think it makes it easier to compare
   
   acf(detrend_renewables[,i], lag.max = 40, 
-      main = paste("Autocorrelation of \n Detrended", col_names[i]), 
+      main = paste("Autocorrelation of Detrended \n", col_names[i]), 
       ylim = c(-1, 1)
       )
   
   pacf(detrend_renewables[,i], lag.max = 40, 
-       main = paste("Autocorrelation of \n Detrended", col_names[i]), 
+       main = paste("Autocorrelation of Detrended \n", col_names[i]), 
        ylim = c(-1, 1)
        )
 }
@@ -177,19 +188,28 @@ Set aside the detrended series and consider the original series again from Q1 to
 ### Q6
 Do the series seem to have a seasonal trend? Which serie/series? Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to this/these time series. Ask R to print the summary of the regression. Interpret the regression output. Save the regression coefficients for further analysis.
 
-***Answers***: among three series, hydroelectric power consumption has the strongest seasonality. Therefore, I will use this series to analyze its seasonality. From the results, we can see most seasonal dummies are statistically significant at 5% or 1% confidence level, which demonstrates the strong seasonality of this series. 
+***Answers***: Based on regression results, among three series, hydroelectric power consumption has the strongest seasonality. Because we can see most seasonal dummies are statistically significant at 5% or 1% confidence level, which demonstrates the strong seasonality of this series. However, for the other two series, none of their seasonal dummies are statistically significant. 
 
 ```{r}
 
-dummies <- seasonaldummy(ts_renewables[,1]) #create seasonal dummy variables
+dummies <- seasonaldummy(ts_renewables[,1]) 
+#create seasonal dummy variables
 
-lm_season <- lm(formula = ts_renewables[,3] ~ dummies) #store regression result to a list
+for (i in c(1:3)){
+  lm(formula = ts_renewables[,i] ~ dummies) %>% summary() %>% print()
+} 
+  #run regressions for all three series to check their seasonality
+
+lm_season <- lm(formula = ts_renewables[,3] ~ dummies) 
+  #store regression result to a list
 
 summary(lm_season)
 
-cf_season <- lm_season$coefficients[2:12] #store slopes of seasonal dummy variables
+cf_season <- lm_season$coefficients[2:12] 
+  #store slopes of seasonal dummy variables
 
-beta0 <- lm_season$coefficients[1] #store intercept of the regression result
+beta0 <- lm_season$coefficients[1] 
+  #store intercept of the regression result
 
 ```
 
@@ -201,9 +221,12 @@ Use the regression coefficients from Q6 to deseason the series. Plot the deseaso
 ```{r}
 ggplot(data = lm_season, aes(y = lm_season$residuals, x = t)) + 
   geom_line() +
-  geom_line(aes(y = renewables_sub$`Hydroelectric Power Consumption`), col = "green")
+  geom_line(aes(y = renewables_sub$`Hydroelectric Power Consumption`), 
+            ol = "green")
 
-#residuals in regression results are already the deseasoned series we want. So I use residuals to plot. Below is the code of using coefficients to calculate the deseasoned series:
+#residuals in regression results are already the deseasoned series we want. 
+#So I use residuals to plot. 
+#Below is the code of using coefficients to calculate the deseasoned series:
 
 # hydro_seas_comp=array(0,nrow(ts_renewables))
 
@@ -218,7 +241,7 @@ ggplot(data = lm_season, aes(y = lm_season$residuals, x = t)) +
 ### Q8
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. Did the plots change? How?
 
-***Answer***: The plots changed. Compared to previous acf and pacf, there is no strong seasonality now. ACF shows a downward trend. Most PACF are not significant, which may imply stationarity. 
+***Answer***: The plots changed. Compared to previous acf and pacf, there is no strong seasonality now. ACF shows a downward trend. Most PACF are not statistically significant (below the blue dashed lines in the graph), which may imply stationarity. 
 
 ```{r}
 
@@ -228,15 +251,15 @@ ts_deseason_hydro = ts(lm_season$residuals, start = c(1973, 1), frequency = 12)
 par(mfrow = c(1,3)) #I will plot time series plot, acf, and pacf together
 
 plot(y = lm_season$residuals, x = t, type = "l", 
-     main = "Plot of Deseason Hydroelectric /n Energy Consumption")
+     main = "Plot of Deseason Hydroelectric \n Energy Consumption")
 
 acf(x = ts_deseason_hydro, lag.max = 40, xlab = "Time", ylab = "ACF",
-    main = "Autocorrelation of Deseason /n Hydroelectric Energy Consumption", 
+    main = "Autocorrelation of Deseason \n Hydroelectric Energy Consumption", 
     ylim = c(-1, 1)
     )
 
 pacf(x = ts_deseason_hydro, lag.max = 40, xlab = "Time", ylab = "PACF",
-    main = "Partial Autocorrelation of Deseason /n Hydroelectric Energy Consumption", 
+    main = "Partial Autocorrelation of Deseason \n Hydroelectric Energy Consumption", 
     ylim = c(-1, 1)
     )
 ```
