@@ -129,9 +129,6 @@ The random component is the time series without seasonal and trend component. Le
 
 ```{r}
 #Using R decompose function
-iHP=1
-decompose_inflow_data=decompose(ts_inflow_data[,iHP],"additive")
-plot(decompose_inflow_data)
 
 #Inspect random component
 inflow_random <- decompose_inflow_data$random   
@@ -213,7 +210,7 @@ When working with time series you cannot simply remove an outlier. Remember that
 
 ```{r}
 #Just find extreme value
-outlier(inflow_random$inflow) 
+outlier(inflow_random$inflow)
                   
 #Function chisq.out.test check if extreme value is outlier
 chi_test <- chisq.out.test(inflow_random$inflow,var(inflow_random$inflow))
