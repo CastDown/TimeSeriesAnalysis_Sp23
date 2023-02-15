@@ -52,8 +52,8 @@ wind_data$DATE <- ym(wind_data$DATE)
 Many of the functions we will use require a time series object. You can transform your data in a time series using the function *ts()*. 
 
 ```{r}
-ts_wind_data <- ts(wind_data$AWND.1,frequency=12) 
-
+ts_wind_data <- ts(wind_data$AWND.1, frequency=12) 
+str(ts_wind_data)
 ```
 
 ## Initial plots
@@ -106,16 +106,21 @@ Additional info on decompose()
 
 ```{r}
 #Ex1: Using R decompose function decompose the wind data in seasonal, trend and random
-
+decompose(clean_wind_data, type = "additive") %>% plot()
 
 #Ex2: Store the three component in separate vector
-  
+decom_stats <- decompose(clean_wind_data, type = "additive")  
+decom_stats_df <- data.frame(seasonal = decom_stats$seasonal, 
+                             trend = decom_stats$trend,
+                             randome = decom_stats$random
+                            )
 
 #Ex3: Create one data frame with all three vector and the Date columns from wind_data
-
+decom_stats_df <- cbind(decom_stats_df, wind_data$DATE)
 
 #Ex4: Inspect the data frame using head() and tail()
-
+head(decom_stats_df)
+tail(decom_stats_df)
 
 # Discuss the results
 
