@@ -125,5 +125,5 @@ tail(decom_stats_df)
 # Discuss the results
 
 ```
-
+The first 6 observations and the last 6 observations are omitted because moving average method needs 6 obs before and 6 obs after to calculate the trend and seasonality. Thus, the first and last 6 obs don't have enough obs before or after them. Therefore, they are omitted. 
 
