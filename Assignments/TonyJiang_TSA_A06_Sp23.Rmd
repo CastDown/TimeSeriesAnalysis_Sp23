@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2023"
 subtitle: "Assignment 6 - Due date 03/06/23"
-author: "Student Name"
+author: "Tony Jiang"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -26,7 +26,8 @@ Packages needed for this assignment: "forecast","tseries". Do not forget to load
 
 ```{r}
 #Load/install required package here
-
+library(forecast)
+library(tseries)
 ```
 
 
@@ -37,10 +38,14 @@ Describe the important characteristics of the sample autocorrelation function (A
 * AR(2)
 
 > Answer: 
+ACF - ACF of AR(2) should have exponential and gradual decays over lags, which means ACF should gradually become statistically insiginificant over lags. 
+PACF - PACF of AR(2) should have a cutoff at lag 2, which means PACF at lag 1 and lag 2 should be statistically significant (above the blue dashed line in pacf polt). And PACF at lag 3 should be statistically insignificant. 
 
 * MA(1)
 
 > Answer: 
+ACF - ACF of MA(1) should have a cutoff at lag 1, which means ACF at lag 1 should be statistically significant (above the blue dashed line in pacf polt). And PACF at lag 2 and beyond should be statistically insignificant.
+PACF - PACF of MA(1) should display have exponential and gradual decays over lags, which means PACF of MA(1) should gradually become statistically insiginificant over lags.
 
 
 

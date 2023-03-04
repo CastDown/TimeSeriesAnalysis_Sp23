@@ -205,6 +205,7 @@ decompose_solar <- ts_renewable_sub5[,1] %>%
   decompose(type = "multiplicative")
 
 MannKendall(decompose_solar$random)
+SeasonalMannKendall(decompose_solar$random)
 
 # use MannKendall test to test the stationarity of the random component of 
 # wind energy consumption
@@ -212,6 +213,7 @@ decompose_wind <- ts_renewable_sub5[,2] %>%
   decompose(type = "multiplicative")
 
 MannKendall(decompose_wind$random)
+SeasonalMannKendall(decompose_wind$random)
 
 ```
 
@@ -247,6 +249,11 @@ ts_renewable_sub5_2012[,1] %>%
   decompose(type = "additive") %>% 
   plot()
 
+test <- ts_renewable_sub5_2012[,1] %>% 
+  ts(start = c(2012, 1), frequency = 12) %>% 
+  decompose(type = "additive")
+
+SeasonalMannKendall(test$random)
 ```
 
 > Answer: the new random component still contains a potential pattern (seasonality). This is because seasonal components in both series are not additive, but multiplicative. The magnitudes of the seasonal components are changing along with time. So using additive can't fully exclude seasonality from the series. 
