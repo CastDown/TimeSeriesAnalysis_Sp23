@@ -4,6 +4,8 @@ subtitle: "Assignment 6 - Due date 03/06/23"
 author: "Tony Jiang"
 output: pdf_document
 geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: inline
 ---
   
 ## Directions
@@ -28,6 +30,8 @@ Packages needed for this assignment: "forecast","tseries". Do not forget to load
 #Load/install required package here
 library(forecast)
 library(tseries)
+library(stats)
+library(sarima)
 ```
 
 
@@ -44,7 +48,7 @@ PACF - PACF of AR(2) should have a cutoff at lag 2, which means PACF at lag 1 an
 * MA(1)
 
 > Answer: 
-ACF - ACF of MA(1) should have a cutoff at lag 1, which means ACF at lag 1 should be statistically significant (above the blue dashed line in pacf polt). And PACF at lag 2 and beyond should be statistically insignificant.
+ACF - ACF of MA(1) should have a cutoff at lag 1, which means ACF at lag 1 should be statistically significant (above the blue dashed line in pacf plot). And PACF at lag 2 and beyond should be statistically insignificant.
 PACF - PACF of MA(1) should display have exponential and gradual decays over lags, which means PACF of MA(1) should gradually become statistically insiginificant over lags.
 
 
@@ -53,6 +57,17 @@ PACF - PACF of MA(1) should display have exponential and gradual decays over lag
 Recall that the non-seasonal ARIMA is described by three parameters ARIMA$(p,d,q)$ where $p$ is the order of the autoregressive component, $d$ is the number of times the series need to be differenced to obtain stationarity and $q$ is the order of the moving average component. If we don't need to difference the series, we don't need to specify the "I" part and we can use the short version, i.e., the ARMA$(p,q)$. Consider three models: ARMA(1,0), ARMA(0,1) and ARMA(1,1) with parameters $\phi=0.6$ and $\theta= 0.9$. The $\phi$ refers to the AR coefficient and the $\theta$ refers to the MA coefficient. Use R to generate $n=100$ observations from each of these three models
 
 ```{r}
+#ARMA(1, 0)
+
+ARMAmodel_1 <- arima.sim(model=list(ar=0.6), n=100) #the AR coefficient is 0.6
+
+#ARMA(0, 1)
+
+ARMAmodel_2 <- arima.sim(model=list(ma=0.9), n=100) #the MA coefficient is 0.9
+
+#ARMA(1, 1)
+ARMAmodel_3 <- arima.sim(model=list(ar = 0.6, ma = 0.9), n = 100) 
+#the AR coefficient is 0.6, the MA coefficient is 0.9
 
 ```
 
@@ -61,31 +76,77 @@ Recall that the non-seasonal ARIMA is described by three parameters ARIMA$(p,d,q
 
 ```{r}
 
+# set three plots to display in one graph
+par(mfrow = c(1, 3))
+
+#graph acf plots of three series
+acf(ARMAmodel_1, lag.max = 40, ylim = c(-1, 1))
+acf(ARMAmodel_2, lag.max = 40, ylim = c(-1, 1))
+acf(ARMAmodel_3, lag.max = 40, ylim = c(-1, 1))
 ```
 
 
 (b) Plot the sample PACF for each of these models in one window to facilitate comparison.  
 
 ```{r}
+# set three plots to display in one graph
+par(mfrow = c(1, 3))
+
+#graph pacf plots of three series
+pacf(ARMAmodel_1, lag.max = 40, ylim = c(-1, 1))
+pacf(ARMAmodel_2, lag.max = 40, ylim = c(-1, 1))
+pacf(ARMAmodel_3, lag.max = 40, ylim = c(-1, 1))
 
 ```
 
 (c) Look at the ACFs and PACFs. Imagine you had these plots for a data set and you were asked to identify the model, i.e., is it AR, MA or ARMA and the order of each component. Would you be identify them correctly? Explain your answer.
 
 > Answer:
+I will identify series 1 as an AR(1) process. Because its acf has exponential decays and we can see a cutoff at lag 1 in its pacf. These two are identifiers of AR(1) processes.
+I will identify series 2 as an MA(1) process. Because its pacf has exponential decays and we can see a cutoff at lag 1 in its acf. These two are identifiers of MA(1) processes.
+For series 3, I may identify it as an ARMA process, but I am not able to identify it as a ARMA(1, 1) process correctly. First, we can see exponential decays in its acf and pacf plots, which indicates the possibility of an ARMA model. But we can't observe any cutoffs in acf of pacf plots clearly, which makes it difficult for us to indetify p and q of this ARMA process.
 
 (d) Compare the ACF and PACF values R computed with the theoretical values you provided for the coefficients. Do they match? Explain your answer.
 
 > Answer: 
-
+***For series 1***, from the PACF, we can get the computed coefficient close to 0.6, which approximately matches the coeeficients provided by me. This is reasonable because we should be able to tell the coefficient of AR simply from its pacf plot, when no MA component contaminates the series. The slight difference is caused by the small number of observations in the series. PACF value at lag 1 computed by R is only an unbiased estimator of the coefficient. The difference between the estimate and the true value (residue) should be larger when less observations are available. 
+***For series 2***, the computed ACF and PACF values computed by R at lag 1 do not match the coefficients provided by me. This is because, for a given MA(1) process, Var(Yt, Yt-1), which is its acf at lag 1, is $\theta$ multiplied by the variance of this process's error term. This is why we can't find 0.9 in its acf plot at lag 1. 
+***For series 3***, the computed ACF and PACF values computed by R at lag 1 do not match the coefficients provided by me. Its pacf value at lag 1 is distorted by its MA component, which makes it change from 0.6 to a number close to 0.8. As for its ACF value at lag 1, it also got distorted by its AR component, which makes its value highr than before. To be more specific, both acf and pacf values are higher at lag 1 than before. The combination of AR and MA introduces more correlation between various lags than a sole AR or MA process, which should raesonably increase this process's acf and pacf values. 
 
 (e) Increase number of observations to $n=1000$ and repeat parts (a)-(d).
 
 ```{r}
+#ARMA(1, 0)
 
+ARMAmodel_21 <- arima.sim(model=list(ar=0.6), n=1000) #the AR coefficient is 0.6
+
+#ARMA(0, 1)
+
+ARMAmodel_22 <- arima.sim(model=list(ma=0.9), n=1000) #the MA coefficient is 0.9
+
+#ARMA(1, 1)
+ARMAmodel_23 <- arima.sim(model=list(ar = 0.6, ma = 0.9), n = 1000) 
+#the AR coefficient is 0.6, the MA coefficient is 0.9
+
+# set three plots to display in one graph
+par(mfrow = c(1, 3))
+
+#graph acf plots of three series
+acf(ARMAmodel_21, lag.max = 40, ylim = c(-1, 1))
+acf(ARMAmodel_22, lag.max = 40, ylim = c(-1, 1))
+acf(ARMAmodel_23, lag.max = 40, ylim = c(-1, 1))
+
+# set three plots to display in one graph
+par(mfrow = c(1, 3))
+
+#graph pacf plots of three series
+pacf(ARMAmodel_21, lag.max = 40, ylim = c(-1, 1))
+pacf(ARMAmodel_22, lag.max = 40, ylim = c(-1, 1))
+pacf(ARMAmodel_23, lag.max = 40, ylim = c(-1, 1))
 ```
-
-
+> Answer: 
+***For series 1***, from the PACF, we can get the computed coefficient closer to 0.6 than the result computed with 100 observations. And its propoerty as a cutoff point is also more clear than before. This is reasonable because we should be able to tell the coefficient of AR simply from its pacf plot, when no MA component contaminates the series. Increasing number of observations enhances accuracy of the estimate, which leads to a PACF value at lag 1 closer to 0.6.  
+***For series 2 and 3***, I identify the same thing as I stated in my precious analysis. For MA(1) process, since the distribution of the error term is unknown, I cannot tell what the estimate should be. Therefore, I cannot tell what ACF value at lag 1 computed by R should be. So, I cannot say whether the precision of estimate improves or not. But I will assume, the accuracy is increased with more observations. The same reasoning is also applicable to series 3, ARMA(1, 1) process.
 
 ## Q3
 
@@ -93,9 +154,10 @@ Consider the ARIMA model $y_t=0.7*y_{t-1}-0.25*y_{t-12}+a_t-0.1*a_{t-1}$
 
 
 (a) Identify the model using the notation ARIMA$(p,d,q)(P,D,Q)_ s$, i.e., identify the integers $p,d,q,P,D,Q,s$ (if possible) from the equation.
+> ***Based on the equation, there is no differencing, so d = D = 0. $y_{t-1}$ stands for AR component, so p = 1. $a_{t-1}$ stands for MA component, so q = 1. $y_{t-12}$ stands for seasonal AR component, so P = 1. So, this is an ARIMA(1,0,1)(1,0,0) model.*** 
 
 (b) Also from the equation what are the values of the parameters, i.e., model coefficients. 
-
+> ***Based on the model, 0.7 is the coefficient for nonseasonal AR component. -0.1 is the coefficient for nonseasonal MA component. -0.25 is the coefficient for seasonal AR component. ***
 
 ## Q4
 
@@ -103,5 +165,15 @@ Plot the ACF and PACF of a seasonal ARIMA$(0, 1)\times(1, 0)_{12}$ model with $\
 
 ```{r}
 
-```
+# A SARIMA model with 1000 observations, 0.5 for nonseasonal MA, 
+# and 0.8 for seasonal AR
+SARIMAmodel_4<- sim_sarima(model=list(ma=0.5,sar=0.8, nseasons=12), n=1000) 
 
+par(mfrow = c(1, 2))
+acf(SARIMAmodel_4, lag.max = 40, ylim = c(-1, 1))
+pacf(SARIMAmodel_4, lag.max = 40, ylim = c(-1, 1)) 
+```
+>Answer: 
+***For seasonal component***: Order of 1 for seasonal AR component is well displayed in the plot. I can observe positive spikes in its ACF plot at lag 12, 24, 36, ... with exponential decays. I can observe only one positive spike at lag 12 in its PACF plot, as well. These two characteristics lead to P = 1 (order of 1 for seasonal AR component). 
+***For nonseasonal component***: I see a cutoff at lag 1 in its ACF plot, which may demonstrate order of 1 for its nonseasonal MA component. In contrast, I cannot observe a clear decay in its ACF plot, which dispells the possibility of the existence of nonseasonal AR component. 
+***Overall, based on the plot, I will conclude the process is an ARIMA(0,0,1)(1,0,0) model, which represents our model well. ***
