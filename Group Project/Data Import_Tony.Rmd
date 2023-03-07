@@ -1,0 +1,75 @@
+---
+title: "Team Project"
+author: "Tony Jiang"
+date: "2023-03-07"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r cars}
+library(tidyr)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(tseries)
+library(forecast)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+nqsd <- read_csv("/Users/jiangliwei/Downloads/HistoricalData_1678156262218.csv", 
+                 col_names = TRUE)
+
+str(nqsd)
+
+# sort the data frame by date
+nqsd <- nqsd %>% arrange(mdy(Date))
+nqsd$Date <- mdy(nqsd$Date)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+
+# fill all missing dates with N/A
+nqsd_complete <- nqsd %>% 
+  complete(Date = seq.Date(min(Date), max(Date), by = "day"))
+
+# convert the series to a time series
+ts_nqsd <- ts(nqsd_complete[, c(2, 4, 5, 6)], 
+              start = c(2013, 
+                        as.numeric(format(nqsd_complete$Date[1], 
+                                          "%j"))), 
+              end = c(2023, 
+                      as.numeric(format(nqsd_complete$Date[nrow(nqsd_complete)], 
+                                        "%j"))), 
+              frequency = 365
+              )
+
+# fill all the missing values with averages
+ts_nqsd_complete <- cbind(na.interp(ts_nqsd[,1]),
+                          na.interp(ts_nqsd[,2]),
+                          na.interp(ts_nqsd[,3]),
+                          na.interp(ts_nqsd[,4])
+                          ) %>% 
+  as.data.frame() %>% 
+  ts(start = c(2013,
+               as.numeric(format(nqsd_complete$Date[1],
+                                 "%j"))),
+     end = c(2023,
+             as.numeric(format(nqsd_complete$Date[nrow(nqsd_complete)],
+                               "%j"))),
+     frequency = 365
+     )
+                               
+```
+
