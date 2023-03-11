@@ -1,0 +1,229 @@
+---
+title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2023"
+subtitle: "Assignment 7 - Due date 03/20/23"
+author: "Tony Jiang"
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+## Set up
+
+```{r, message=FALSE, warning=FALSE}
+#Load/install required package here
+
+library(tidyverse)
+library(forecast)
+library(lubridate)
+library(tseries)
+library(Kendall)
+library(sarima)
+```
+
+## Importing and processing the data set
+
+Consider the data from the file "Net_generation_United_States_all_sectors_monthly.csv". The data corresponds to the monthly net generation from January 2001 to December 2020 by source and is provided by the US Energy Information and Administration. **You will work with the natural gas column only**.
+
+Packages needed for this assignment: "forecast","tseries". Do not forget to load them before running your script, since they are NOT default packages.\\
+
+### Q1
+
+Import the csv file and create a time series object for natural gas. Make you sure you specify the **start=** and **frequency=** arguments. Plot the time series over time, ACF and PACF.
+
+```{r}
+gene <- read.csv("./Data/Net_generation_United_States_all_sectors_monthly.csv", 
+                 skip = 4, header = TRUE)
+
+# invert the data frame so its dates are in an ascending order
+gene <- gene[order(nrow(gene):1), ] 
+
+# convert the dataframe to a time series
+ts_nagas <- ts(gene$natural.gas.thousand.megawatthours, 
+               start = c(2001, 1), frequency = 12)
+
+# check the structure of the dataframe
+str(ts_nagas)
+
+# plot three required plots of the series
+par(mfrow = c(1,3))
+plot(ts_nagas)
+acf(ts_nagas, lag.max = 40, ylim = c(-1, 1))
+pacf(ts_nagas, lag.max = 40, ylim = c(-1, 1))
+```
+
+### Q2
+
+Using the $decompose()$ or $stl()$ and the $seasadj()$ functions create a series without the seasonal component, i.e., a deseasonalized natural gas series. Plot the deseasonalized series over time and corresponding ACF and PACF. Compare with the plots obtained in Q1.
+
+> Answer: Comparing time series plot: the plot of deseasonalized series has no srong seasonality, while the plot in Q1 has a very strong seasonality. You can observe a cyclical trend with a frequency of 1 year. The change is also observable in the comparison betweeb acf and pacf plots. ACF and PACF plots of the original series has strong spikes at lags of 12, 24, 36. However, ACF plot of deseasonalized series has a smooth ACF plot and its PACF plot no longer have statistically significant spikes at lags of 12, 24, 36.. Seasonal component is sucessfully eliminated from the series.
+
+```{r}
+# decompose the series
+decomp_nagas <- decompose(ts_nagas)
+
+decomp_nagas %>% plot()
+
+# deseasonalize the seires
+deseason_nagas <- ts_nagas - decomp_nagas$seasonal
+
+# plot time series, acf, and pacf plots of the deseasonalized series
+par(mfrow = c(1,3))
+plot(deseason_nagas)
+acf(deseason_nagas, lag.max = 40, ylim = c(-1, 1))
+pacf(deseason_nagas, lag.max = 40, ylim = c(-1, 1))
+
+```
+
+## Modeling the seasonally adjusted or deseasonalized series
+
+### Q3
+
+Run the ADF test and Mann Kendall test on the deseasonalized data from Q2. Report and explain the results.
+>Answer: **Mann Kendall** test has a p-value smaller than 0.01, so we will reject the null hypothesis and deem the deseasonalized series a nonstationary series, be it a deterministic or stachastic trend. **The ADF test with the alternative of stationary** has a p-value of 0.01, so we will reject the null hypothesis and assert the deseasonalized series has no unit root/it has stationarity. However, this seems against our visuliazation result, which indicates a trend within the series. Therefore, I suspects that this series may have a stationary trend, which is not identifiable by using ADF test with an alternative of stationary. So, **I try to use ADF test with an alternative of explosive**, which is used to render the alternative hypothesis as the series has a stationary trend. The p-value of this test is 0.99, by which we fail to reject the null hyopothesis and assert that the series has a unit root. I am not sure whether my solution is right. But based on Mann Kendall test, I lean towards the second test.
+
+```{r}
+#Mann Kendall test
+MannKendall(deseason_nagas)
+
+# ADF test with stationary as the alternative hypothesis 
+adf.test(deseason_nagas, alternative = "stationary")
+
+# ADF test with stationary trend as the alternative hypothesis 
+adf.test(deseason_nagas, alternative = "explosive")
+```
+
+### Q4
+
+Using the plots from Q2 and test results from Q3 identify the ARIMA model parameters $p,d$ and $q$. Note that in this case because you removed the seasonal component prior to identifying the model you don't need to worry about seasonal component. Clearly state your criteria and any additional function in R you might use. DO NOT use the $auto.arima()$ function. You will be evaluated on ability to can read the plots and interpret the test results.
+
+>Anwser: based on my answer to Q3, I will set d = 1 since Mann KenDall test and ADF test with explosive alternative suggest this series is not stationary and may have a unit root. In terms of p and q, because the ACF plot of the deseasonalized series dies out and its PACF plot has a cutoff at lag 1. I will first try p = 1 and q = 0. So, the model I will use is an ARI(1,1) with no MA component.
+So, I will use Arima() function to model the series. 
+
+
+### Q5
+
+Use $Arima()$ from package "forecast" to fit an ARIMA model to your series considering the order estimated in Q4. You should allow constants in the model, i.e., $include.mean = TRUE$ or $include.drift=TRUE$. **Print the coefficients** in your report. Hint: use the $cat()$ function to print.
+
+```{r}
+
+model_110 <- Arima(deseason_nagas, order = c(1, 1, 0), include.drift = TRUE) 
+
+print("Coefficients are: ")
+cat(paste(c("AR coefficient:", "Drift:"), model_110$coef), 
+    sep = ", ")
+
+```
+
+### Q6
+
+Now plot the residuals of the ARIMA fit from Q5 along with residuals ACF and PACF on the same window. You may use the $checkresiduals()$ function to automatically generate the three plots. Do the residual series look like a white noise series? Why?
+
+>Answer: It does look like a white noise series, but its significant spikes in ACF and PACF plots are worth investigating. 
+Though its time series plot does look like a white noise series, its ACF and PACF plots negate the possibility that this series is a white noise series. Its ACF and PACF plots have too many significant spikes. They are hard to ignore though some siginificant spikes are only slightly above the blue dashed line. 
+
+```{r}
+# use checkresidual 
+checkresiduals(model_110$residuals)
+
+# plot ts series, acf, and pacf plots together
+par(mfrow = c(1, 3))
+
+plot(model_110$residuals)
+
+acf(model_110$residuals, lag.max = 40, ylim = c(-1, 1))
+
+pacf(model_110$residuals, lag.max = 40, ylim = c(-1, 1))
+
+```
+
+
+## Modeling the original series (with seasonality)
+
+### Q7
+
+Repeat Q4-Q6 for the original series (the complete series that has the seasonal component). Note that when you model the seasonal series, you need to specify the seasonal part of the ARIMA model as well, i.e., $P$, $D$ and $Q$.
+
+>Answer: I will set p = 1, d = 0, P = 1, D = 1, q = Q = 0. By ploting the original series, there are mutiple siginificant spikes in its ACF plot at lags of 12, 24, 36, while only one significant spike in its PACF plot at lag of 12. This indicates SAR(1). And the seasonal pattern of the original series is quite strong and stable, so I will also set D = 1, which means seasonal differencing with an order of 1. Since we already difference the series once, I will set d = 0 to avoid overdifferencing. The strong spike in PACF plot of the seires motivates me to set p = 1, which is AR(1). As for MA components, I don't observa any strong MA/SMA components in ACF and PACF plots. Therefore, the model I will use is $ARIMA(1,0,0)(1,1,0)_{12}$
+
+```{r}
+# plot the original series to estimate orders 
+par(mfrow = c(1,3))
+plot(ts_nagas)
+acf(ts_nagas, lag.max = 40, ylim = c(-1, 1))
+pacf(ts_nagas, lag.max = 40, ylim = c(-1, 1))
+
+model_1011 <- Arima(ts_nagas,
+                    order = c(1,0,0),
+                    seasonal = c(1, 1, 0),
+                    include.drift = TRUE)
+
+model_1011 %>% summary()
+```
+
+
+### Q8
+
+Compare the residual series for Q7 and Q6. Can you tell which ARIMA model is better representing the Natural Gas Series? Is that a fair comparison? Explain your response.
+>Answer: I can't tell which one is a better fit. They are both stationary based on Mann KenDall test. ANd their ACF and PACF plots both have some significant spikes. No perfect ACF and PACF plots. Actually, they are not comparable because two residul sets are generated using two different mothods. The first one is the residual of modeling deseasonalized series, while the second is he residual of modeling the original series. 
+
+```{r}
+
+# red one is the plot of residuals of deseasonalized series, 
+# the blue line is residuals of the original series
+ts.plot(model_110$residuals, model_1011$residuals, 
+        lty = c(1,2), col = c("red", "blue")
+        )
+
+MannKendall(model_110$residuals)
+MannKendall(model_1011$residuals)
+
+# plot the nonseasonal Arima model
+par(mfrow = c(1, 3))
+
+plot(model_110$residuals)
+
+acf(model_110$residuals, lag.max = 40, ylim = c(-1, 1))
+
+pacf(model_110$residuals, lag.max = 40, ylim = c(-1, 1))
+
+# plot the Seasonal Arima model
+par(mfrow = c(1, 3))
+
+plot(model_1011$residuals)
+
+acf(model_1011$residuals, lag.max = 40, ylim = c(-1, 1))
+
+pacf(model_1011$residuals, lag.max = 40, ylim = c(-1, 1))
+```
+
+
+## Checking your model with the auto.arima()
+
+**Please** do not change your answers for Q4 and Q7 after you ran the $auto.arima()$. It is **ok** if you didn't get all orders correctly. You will not lose points for not having the same order as the $auto.arima()$.
+
+### Q9
+
+Use the $auto.arima()$ command on the **deseasonalized series** to let R choose the model parameter for you. What's the order of the best ARIMA model? Does it match what you specified in Q4?
+
+>Answer: the best ARIMA model is ARIMA(1,1,1). It doesn't match my estimates in Q4, which is ARIMA(1,1,0). 
+
+```{r}
+
+# auto Arima model for deseasonalized series
+auto.arima(deseason_nagas)
+
+```
+
+
+### Q10
+
+Use the $auto.arima()$ command on the **original series** to let R choose the model parameters for you. Does it match what you specified in Q7?
+
+>Answer: No, it doesn't match my estimates in Q7, which is $ARIMA(1,0,0)(1,1,0)_{12}$. SMA(1) is really surprising because the ACF plot of the original series contains gradual decays, which indicates SAR. Maybe it is the AR component that distorts the result. This assignment highlights the complexity of model fitting. Visualization may not provide the whole picture of the model. We still need to keep trying and improving our model.
+
+```{r}
+
+# auto Arima for the original series
+auto.arima(ts_nagas)
+
+```
+
