@@ -211,10 +211,13 @@ SARIMA was the best fit for the seasonal data. If you want generate a table to c
 ```{r}
 kbl(seas_scores, 
       caption = "Forecast Accuracy for Seasonal Data",
-      digits = array(5,ncol(seas_scores))) %>%
+      digits = array(5,ncol(seas_scores)
+                     )
+    ) %>%
   kable_styling(full_width = FALSE, position = "center") %>%
   #highlight model with lowest RMSE
-  kable_styling(latex_options="striped", stripe_index = which.min(seas_scores[,"RMSE"]))
+  kable_styling(latex_options="striped", stripe_index = which.min(seas_scores[,"RMSE"])
+                )
 ```
 
 ## Visialization Challenge
