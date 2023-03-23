@@ -39,6 +39,7 @@ library(smooth)
 #New package for M9 to assist with tables
 #install.packages("kableExtra")
 library(kableExtra)
+library(Kendall)
 
 ```
 
@@ -145,11 +146,49 @@ plot(BR_Temp_ts_deseas)
 Which models could be used to forecast the non-seasonal temperature series? When fitting a model it's important to do the backward-looking assessment. Check residuals to see if your model is well representing the historical data.
 
 >Answer: I can use ARIMA(p,d,q) model. First I need to run a adf test to see whether unit root is needed. And also look at the ACF and PACF
+
 ```{r}
 # Exercise 3: Try fitting different model to the deseasonal series. Check the residuals using the checkresiduals() function.
 
 # ADF test, ACF, and PACF
-adf()
+adf.test(BR_Temp_ts_deseas, alternative = "stationary")
+  # p-value is 0.01, so we reject the null hypothesis and assume 
+  # the series is already stationary  
+MannKendall(BR_Temp_ts_deseas)
+  # the p-value is also small here. So, we will continue without unit root, A.K.A differencing
+
+par(mfrow = c(1,2))
+acf(BR_Temp_ts_deseas, lag.max = 40, ylim = c(-1, 1))
+pacf(BR_Temp_ts_deseas, lag.max = 40, ylim = c(-1, 1))
+  # Based on the plots, feel like AR can be 2 or 3. 
+
+# feels like MA component exists, so I will try q = 1
+Arima(BR_Temp_ts_deseas, order = c(0, 0, 1)) %>% 
+  checkresiduals()
+  # ARIMA(0,0,1) has significant spikes in ACF. NO!
+# then I will try AR component. so p = 1, q = 0
+
+Arima(BR_Temp_ts_deseas, order = c(1, 0, 0)) %>% 
+  checkresiduals()
+  # ARIMA(1,0,0) also has significant spikes in ACF. NO!
+
+# let's try ARIMA(1,0,1)
+Arima(BR_Temp_ts_deseas, order = c(1, 0, 1)) %>% 
+  checkresiduals()
+  # this looks good. But I will still try higher orders to make sure
+
+Arima(BR_Temp_ts_deseas, order = c(1, 0, 2)) %>% 
+  checkresiduals()
+
+Arima(BR_Temp_ts_deseas, order = c(2, 0, 1)) %>% 
+  checkresiduals() #1176.59 is its AICc, so this is so far the best one
+
+Arima(BR_Temp_ts_deseas, order = c(2, 0, 2)) %>% 
+  checkresiduals()
+
+Arima(BR_Temp_ts_deseas, order = c(3, 0, 2)) %>% 
+  checkresiduals()
+
 
 
 ```
@@ -160,9 +199,29 @@ In the lesson we used function `accuracy()` to calculate performance measures li
 
 ```{r}
 
+autoarima <- auto.arima(BR_Temp_ts_deseas) 
+# but auto arima includes seasonal component and differenced??
+
 #Exercise 4: Apply function accuracy() to the forecasts generated with each model you fit for the non-seasonal data on Ex 3. 
 
+arima201 <- Arima(BR_Temp_ts_deseas, order = c(2, 0, 1))
 
+compare <- inner_join(
+  as.data.frame(
+    accuracy(
+      autoarima$fitted, BR_Temp_ts_deseas)
+    ), 
+  as.data.frame(
+    accuracy(
+      arima201$fitted, BR_Temp_ts_deseas)
+    )
+  ) 
+
+accuracy(arima201$fitted,
+         BR_Temp_ts_deseas)
+
+accuracy(autoarima$fitted, 
+         BR_Temp_ts_deseas)
 
 ```
 
@@ -171,9 +230,23 @@ A better visualization of the results from `accuracy()` can be obtained by creat
 ```{r}
 # Exercise 5: create data frame that combines metrics for all the models you created on Ex 3.
 
+auto_scores <- as.data.frame(
+  accuracy(autoarima$fitted,
+           BR_Temp_ts_deseas)
+  )
 
+arima201_scores <- as.data.frame(
+  accuracy(arima201$fitted,
+           BR_Temp_ts_deseas)
+  )
+
+compare_scores <- rbind(auto_scores, arima201_scores) %>% 
+  as.data.frame()
+rownames(compare_scores) <- c("AutoArima", "Arima201")
 # Exercise 6: Decide which model is the best fit by comparing the RMSE metric, i.e, choose model with lowest RMSE
-                    
+
+best_model_index <- which.min(compare_scores[,"RMSE"])
+cat("The best model by RMSE is:", row.names(compare_scores[best_model_index,]))                      
                             
 ```
 

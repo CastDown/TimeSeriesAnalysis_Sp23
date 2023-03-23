@@ -201,8 +201,10 @@ seas_scores <- as.data.frame(rbind(MEAN_scores, SNAIVE_scores, SARIMA_scores))
 row.names(seas_scores) <- c("MEAN", "SNAIVE","SARIMA")
 
 #choose model with lowest RMSE
-best_model_index <- which.min(seas_scores[,"RMSE"])
-cat("The best model by RMSE is:", row.names(seas_scores[best_model_index,]))                       
+best_model_index <- which.min(seas_scores[,"RMSE"]) 
+  #output the row index of the one with the lowest RMSE
+cat("The best model by RMSE is:", row.names(seas_scores[best_model_index,]))  
+  #output a sentence with the best model
                             
 ```
 
