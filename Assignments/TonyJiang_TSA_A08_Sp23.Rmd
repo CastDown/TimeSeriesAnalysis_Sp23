@@ -1,18 +1,10 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2023"
 subtitle: "Assignment 8 - Due date 03/27/23"
-author: "Student Name"
+author: "Tony Jiang"
 output: pdf_document
 geometry: margin=2.54cm
 ---
-
-## Directions
-
-You should open the .rmd file corresponding to this assignment on RStudio. The file is available on our class repository on Github. And to do so you will need to fork our repository and link it to your RStudio.
-
-Once you have the project open the first thing you will do is change "Student Name" on line 3 with your name. Then you will start working through the assignment by **creating code and output** that answer each question. Be sure to use this assignment document. Your report should contain the answer to each question and any plots/tables you obtained (when applicable).
-
-When you have completed the assignment, **Knit** the text and code into a single PDF file. Rename the pdf file such that it includes your first and last name (e.g., "LuanaLima_TSA_A08_Sp22.Rmd"). Submit this pdf using Sakai.
 
 ## Set up
 
@@ -20,14 +12,19 @@ Some packages needed for this assignment: `forecast`,`tseries`,`smooth`. Do not 
 
 ```{r}
 #Load/install required package here
-
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(Kendall)
+library(sarima)
+library(forecast)
 ```
 
 ## Importing and processing the data set
 
 Consider the data from the file "inflowtimeseries.txt". The data corresponds to the monthly inflow in $m^{3}/s$ for some hydro power plants in Brazil. You will only use the last column of the data set which represents one hydro plant in the Amazon river basin. The data span the period from January 1931 to August 2011 and is provided by the Brazilian ISO.
 
-For all parts of the assignment prepare the data set such that the model consider only the data from January 2000 up to December 2009. Leave the year 2010 of data (January 2010 to December 2010) for the out-of-sample analysis. Do **NOT** use data fro 2010 and 2011 for model fitting. You will only use it to compute forecast accuracy of your model.
+For all parts of the assignment prepare the data set such that the model consider only the data from January 2000 up to December 2009. Leave the year 2010 of data (January 2010 to December 2010) for the out-of-sample analysis. Do **NOT** use data of 2010 and 2011 for model fitting. You will only use it to compute forecast accuracy of your model.
 
 ## Part I: Preparing the data sets
 
@@ -36,6 +33,31 @@ For all parts of the assignment prepare the data set such that the model conside
 Read the file into a data frame. Prepare your time series data vector such that observations start in January 2000 and end in December 2009. Make you sure you specify the **start=** and **frequency=** arguments. Plot the time series over time, ACF and PACF.
 
 ```{r}
+inflow <- read.delim(file = "./Data/inflowtimeseries.txt", 
+                     header = FALSE)
+
+colno <- ncol(inflow)
+rowno <- nrow(inflow) - 24
+rowno1 <- rowno + 12
+
+# retrieve the last column to have a full dataset, including year 2010 and 
+ts_inflow_full <- inflow[c(1:rowno1), colno-1] %>% 
+  ts(start = c(1931, 1), frequency = 12)
+
+
+str(ts_inflow_full)
+tail(ts_inflow_full)
+
+ts_inflow_2009 <- inflow[c(1:rowno), colno-1] %>% 
+  ts(start = c(1931, 1), frequency = 12)
+
+tail(ts_inflow_2009)
+
+# plot time series plot, ACF, and PACF
+par(mfrow = c(1,3))
+plot(ts_inflow_2009)
+acf(ts_inflow_full, lag.max = 40, ylim = c(-1, 1))
+pacf(ts_inflow_full, lag.max = 40, ylim = c(-1, 1))
 
 ```
 
@@ -44,7 +66,21 @@ Read the file into a data frame. Prepare your time series data vector such that 
 Using the $decompose()$ or $stl()$ and the $seasadj()$ functions create a series without the seasonal component, i.e., a deseasonalized inflow series. Plot the deseasonalized series and original series together using ggplot, make sure your plot includes a legend. Plot ACF and PACF for the deaseasonalized series. Compare with the plots obtained in Q1.
 
 ```{r}
+# decompose and then retrieve the deseasonalized component
+inflow_2009_deseas <- ts_inflow_2009 %>% 
+  stl(s.window = "periodic") %>% 
+  seasadj()
 
+# examine the ts object to ensure that it is correct
+str(inflow_2009_deseas)
+
+# use ggplot to plot the original and deseasonalized series
+autoplot(inflow_2009_deseas) +
+  autolayer(ts_inflow_2009, series = "Original Series", PI = FALSE) +
+  autolayer(inflow_2009_deseas, series = "Deseasonalized Series", PI = FALSE) +
+  ylab("Inflow Data Till 2009") +
+  ggtitle("Comparison between Original and Deseasonalized Series")
+  
 ```
 
 ## Part II: Forecasting with ARIMA models and its variations
@@ -55,6 +91,26 @@ Fit a non-seasonal ARIMA$(p,d,q)$ model using the auto.arima() function to the n
 
 ```{r}
 
+# model the inflow data till 2009
+arimaauto <- auto.arima(inflow_2009_deseas, seasonal = FALSE)
+
+# forecast data in year 2010
+inflow_for <- forecast(arimaauto, h = 12) 
+
+# deseasonalize the original series
+inflow_2010_deseas <- ts_inflow_full %>% 
+  stl(s.window = "periodic") %>% 
+  seasadj()
+
+# plot the forecast and original series together 
+inflow_for %>% 
+  autoplot() +
+  autolayer(inflow_for, series = "Forecast Series", PI = FALSE) +
+  autolayer(inflow_2010_deseas, series = "Original Series") +
+  ylab("Inflow Data till 2010") +
+  ggtitle("Comparison Between Original and Forecast Series") +
+  scale_x_continuous(breaks = seq(1930, 2010, by = 10))
+
 ```
 
 ### Q4
@@ -64,6 +120,23 @@ Put the seasonality back on your forecasted values and compare with the original
 
 ```{r}
 
+seasonalpart_inflow <- ts_inflow_full %>% 
+  stl(s.window = "periodic") %>% 
+  seasonal()
+
+seasonal_part_2010 <- seasonalpart_inflow[(rowno+1):rowno1]
+
+for_full_2010 <- seasonal_part_2010 + inflow_for$mean
+
+original_inflow_2010 <- ts_inflow_full[(rowno+1):rowno1] %>% 
+  ts(start = c(2010,1), frequency = 12)
+
+for_full_2010 %>% 
+  autoplot() + 
+  autolayer(for_full_2010, series = "forecast seasonal series", PI = FALSE) +
+  autolayer(original_inflow_2010, series = "original seasonal series") +
+  ylab("Inflow Data for Year 2010") +
+  ggtitle("Comparison Between Forecast and Original Seasonal Series")
 ```
 
 ### Q5
@@ -72,11 +145,29 @@ Repeat Q3 for the original data, but now fit a seasonal ARIMA$(p,d,q)x(P,D,Q)_ {
 
 ```{r}
 
+inflow_for_original <- ts_inflow_2009 %>% 
+  auto.arima() %>% 
+  forecast(h = 12)
+
+inflow_for_original %>% 
+  autoplot() +
+  autolayer(inflow_for_original, series = "forecast series", PI = FALSE) +
+  autolayer(ts_inflow_full, series = "original series") +
+  ylab("Inflow Data till 2010") +
+  ggtitle("Comparison Between Original and Forecast Series") +
+  scale_x_continuous(breaks = seq(1930, 2010, by = 10))
+
 ```
 
 ### Q6
 
 Compare the plots from Q4 and Q5 using the autoplot() function.
+
+```{r}
+autoplot(for_full_2010) +
+  autolayer(inflow_for_original, series = "forecast series", PI = FALSE) +
+  autolayer() # 需要把那两个series加起来
+```
 
 ## Part III: Forecasting with Other Models
 
@@ -85,6 +176,7 @@ Compare the plots from Q4 and Q5 using the autoplot() function.
 Fit an exponential smooth model to the original time series using the function $ses()$  from package `forecast`. Note that this function automatically do the forecast. Do not forget to set the arguments: silent=FALSE and holdout=FALSE, so that the plot is produced and the forecast is for the year of 2010.
 
 ```{r}
+
 
 ```
 
