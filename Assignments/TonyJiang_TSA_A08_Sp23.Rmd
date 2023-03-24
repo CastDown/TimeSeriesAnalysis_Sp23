@@ -10,7 +10,8 @@ geometry: margin=2.54cm
 
 Some packages needed for this assignment: `forecast`,`tseries`,`smooth`. Do not forget to load them before running your script, since they are NOT default packages.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
+
 #Load/install required package here
 library(tseries)
 library(tidyverse)
@@ -18,6 +19,7 @@ library(lubridate)
 library(Kendall)
 library(sarima)
 library(forecast)
+library(kableExtra)
 ```
 
 ## Importing and processing the data set
@@ -40,7 +42,8 @@ colno <- ncol(inflow)
 rowno <- nrow(inflow) - 24
 rowno1 <- rowno + 12
 
-# retrieve the last column to have a full dataset, including year 2010 and 
+# retrieve the last column to have a full dataset, including year 2010 
+# but excluding year 2011
 ts_inflow_full <- inflow[c(1:rowno1), colno-1] %>% 
   ts(start = c(1931, 1), frequency = 12)
 
@@ -53,9 +56,11 @@ ts_inflow_2009 <- inflow[c(1:rowno), colno-1] %>%
 
 tail(ts_inflow_2009)
 
+
 # plot time series plot, ACF, and PACF
-par(mfrow = c(1,3))
 plot(ts_inflow_2009)
+
+par(mfrow = c(1,2))
 acf(ts_inflow_full, lag.max = 40, ylim = c(-1, 1))
 pacf(ts_inflow_full, lag.max = 40, ylim = c(-1, 1))
 
@@ -120,23 +125,26 @@ Put the seasonality back on your forecasted values and compare with the original
 
 ```{r}
 
-seasonalpart_inflow <- ts_inflow_full %>% 
+# retrieve the seasonal component of the observed series
+seasonalpart_2010 <- ts_inflow_full %>% 
   stl(s.window = "periodic") %>% 
   seasonal()
 
-seasonal_part_2010 <- seasonalpart_inflow[(rowno+1):rowno1]
+# add the seasonal component of the last year to 
+# the forecast deseasonalized values 
+for_full_2010 <- seasonalpart_2010[(rowno+1):rowno1] + inflow_for$mean
 
-for_full_2010 <- seasonal_part_2010 + inflow_for$mean
-
+# get the observed values of year 2010
 original_inflow_2010 <- ts_inflow_full[(rowno+1):rowno1] %>% 
   ts(start = c(2010,1), frequency = 12)
 
+# plot the forecast series and observaed series
 for_full_2010 %>% 
   autoplot() + 
   autolayer(for_full_2010, series = "forecast seasonal series", PI = FALSE) +
   autolayer(original_inflow_2010, series = "original seasonal series") +
   ylab("Inflow Data for Year 2010") +
-  ggtitle("Comparison Between Forecast and Original Seasonal Series")
+  ggtitle("Comparison Between Forecast and Real Seasonal Series")
 ```
 
 ### Q5
@@ -144,11 +152,12 @@ for_full_2010 %>%
 Repeat Q3 for the original data, but now fit a seasonal ARIMA$(p,d,q)x(P,D,Q)_ {12}$ also using the auto.arima().
 
 ```{r}
-
+# forecast the data till 2009 without deseasonalizing the series
 inflow_for_original <- ts_inflow_2009 %>% 
   auto.arima() %>% 
   forecast(h = 12)
 
+# plot the forecast series and the observed series together
 inflow_for_original %>% 
   autoplot() +
   autolayer(inflow_for_original, series = "forecast series", PI = FALSE) +
@@ -164,9 +173,15 @@ inflow_for_original %>%
 Compare the plots from Q4 and Q5 using the autoplot() function.
 
 ```{r}
+
+# plot two forecast series and the observed series in the same plot to compare
 autoplot(for_full_2010) +
-  autolayer(inflow_for_original, series = "forecast series", PI = FALSE) +
-  autolayer() # 需要把那两个series加起来
+  autolayer(inflow_for_original$mean, series = "one step forecast", CI = FALSE) +
+  autolayer(for_full_2010, series = "deseason + seasonality", CI = FALSE) +
+  autolayer(original_inflow_2010, series = "true series") +
+  ylab("Inflow Data in 2010") +
+  ggtitle("Comparison Between 2 Forecast Series and Real Series")
+
 ```
 
 ## Part III: Forecasting with Other Models
@@ -177,7 +192,12 @@ Fit an exponential smooth model to the original time series using the function $
 
 ```{r}
 
+# forecast the series using exponential smooth model 
+expo_smooth <- ts_inflow_2009 %>% 
+  ses(h = 12, silent = FALSE, holdout = FALSE)
 
+# plot the forecast series
+plot(expo_smooth)
 ```
 
 
@@ -190,22 +210,56 @@ Make one plot with the complete original seasonal historical data (Jan 2000 to D
 
 ```{r}
 
+# plot all three forecast series and the observed series 
+# to compare their performances
+autoplot(ts_inflow_full) +
+  autolayer(ts_inflow_full, series = "reality") +
+  autolayer(for_full_2010, series = "deseason + seasonality forecast", PI = FALSE) +
+  autolayer(inflow_for_original, series = "one step forecast", PI = FALSE) +
+  autolayer(expo_smooth, series = "exponential smooth forecast", PI = FALSE) +
+  ylab("Inflow Data till 2010") +
+  ggtitle("Comparison Between 3 Forecast Series and Real Series")
+
 ```
 
 ### Q9
 
 From the plot in Q9 which model or model(s) are leading to the better forecasts? Explain your answer. Hint: Think about which models are doing a better job forecasting the high and low inflow months for example.
 
-
-```{r}
-
-```
+>Answer: Forecast in Q5, using seasonal Arima to forecast, has the best forecast. In the graph in Q8, we can see that forecast in Q5 is the closest to the peak and trough of the reality series, which means it should have the smallest standard error (the difference between the fitted value and the real values).
 
 ### Q10
 
 Now compute the following forecast metrics we learned in class: RMSE and MAPE,  for all the models you plotted in part Q9. You can do this by hand since your have forecasted and observed values for the year of 2010. Or you can use R function $accuracy()$ from package "forecast" to do it. Build and a table with the results and highlight the model with the lowest MAPE. Does the lowest MAPE corresponds match your answer for part Q10?
 
+>Answer: Yes, in the table, SARIMA has the lowest RMSE and, therefore, best performance, which aligns with my judgment in Q9. 
+
 ```{r}
+
+# get the metrics of the three forecast series
+deandse_score <- accuracy(inflow_for$mean, original_inflow_2010)
+
+onestep_score <- accuracy(inflow_for_original$mean, original_inflow_2010)
+
+ses_score <- accuracy(expo_smooth$mean, original_inflow_2010)
+
+# formulate a table with the metrics of the three forecast series
+compare_scores <- as.data.frame(rbind(deandse_score, onestep_score, ses_score))
+row.names(compare_scores) <- c("ARIMA", "SARIMA","SES")
+
+# output a table highlighting the forecast series with the lowest RMSE
+kbl(compare_scores, 
+      caption = "Forecast Accuracy for Seasonal Inflow Data",
+      digits = array(5,ncol(compare_scores)
+                     )
+    ) %>%
+  kable_styling(full_width = FALSE, position = "center") %>%
+  #highlight model with lowest RMSE
+  kable_styling(latex_options="striped", 
+                stripe_color = "red",
+                stripe_index = which.min(compare_scores[,"RMSE"])
+                )
+
 
 ```
 
