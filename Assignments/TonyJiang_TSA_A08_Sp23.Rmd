@@ -1,18 +1,10 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2023"
 subtitle: "Assignment 8 - Due date 03/27/23"
-author: "Student Name"
+author: "Tony Jiang"
 output: pdf_document
 geometry: margin=2.54cm
 ---
-
-## Directions
-
-You should open the .rmd file corresponding to this assignment on RStudio. The file is available on our class repository on Github. And to do so you will need to fork our repository and link it to your RStudio.
-
-Once you have the project open the first thing you will do is change "Student Name" on line 3 with your name. Then you will start working through the assignment by **creating code and output** that answer each question. Be sure to use this assignment document. Your report should contain the answer to each question and any plots/tables you obtained (when applicable).
-
-When you have completed the assignment, **Knit** the text and code into a single PDF file. Rename the pdf file such that it includes your first and last name (e.g., "LuanaLima_TSA_A08_Sp22.Rmd"). Submit this pdf using Sakai.
 
 ## Set up
 
@@ -20,14 +12,19 @@ Some packages needed for this assignment: `forecast`,`tseries`,`smooth`. Do not 
 
 ```{r}
 #Load/install required package here
-
+library(tseries)
+library(tidyverse)
+library(lubridate)
+library(Kendall)
+library(sarima)
+library(forecast)
 ```
 
 ## Importing and processing the data set
 
 Consider the data from the file "inflowtimeseries.txt". The data corresponds to the monthly inflow in $m^{3}/s$ for some hydro power plants in Brazil. You will only use the last column of the data set which represents one hydro plant in the Amazon river basin. The data span the period from January 1931 to August 2011 and is provided by the Brazilian ISO.
 
-For all parts of the assignment prepare the data set such that the model consider only the data from January 2000 up to December 2009. Leave the year 2010 of data (January 2010 to December 2010) for the out-of-sample analysis. Do **NOT** use data fro 2010 and 2011 for model fitting. You will only use it to compute forecast accuracy of your model.
+For all parts of the assignment prepare the data set such that the model consider only the data from January 2000 up to December 2009. Leave the year 2010 of data (January 2010 to December 2010) for the out-of-sample analysis. Do **NOT** use data of 2010 and 2011 for model fitting. You will only use it to compute forecast accuracy of your model.
 
 ## Part I: Preparing the data sets
 
@@ -36,6 +33,24 @@ For all parts of the assignment prepare the data set such that the model conside
 Read the file into a data frame. Prepare your time series data vector such that observations start in January 2000 and end in December 2009. Make you sure you specify the **start=** and **frequency=** arguments. Plot the time series over time, ACF and PACF.
 
 ```{r}
+inflow <- read.delim(file = "./Data/inflowtimeseries.txt", 
+                     header = FALSE)
+
+colno <- ncol(inflow)
+rowno <- nrow(inflow) - 24
+
+# retrieve the last column to have a full dataset, including year 2010 and 
+ts_inflow_full <- inflow[, colno-1] %>% 
+  ts(start = c(1931, 1), frequency = 12)
+
+
+str(ts_inflow_full)
+tail(ts_inflow_full)
+
+ts_inflow_2009 <- inflow[c(1:rowno), colno-1] %>% 
+  ts(start = c(1931, 1), frequency = 12)
+
+tail(ts_inflow_2009)
 
 ```
 
@@ -45,6 +60,12 @@ Using the $decompose()$ or $stl()$ and the $seasadj()$ functions create a series
 
 ```{r}
 
+ts_inflow_2009_deseas <- stl(ts_inflow_2009, s.window = "periodic")
+
+str(ts_inflow_2009_deseas$time.series)
+plot(ts_inflow_2009_deseas$time.series[,2])
+
+autoplot()
 ```
 
 ## Part II: Forecasting with ARIMA models and its variations
