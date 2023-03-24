@@ -38,10 +38,16 @@ inflow <- read.delim(file = "./Data/inflowtimeseries.txt",
 
 colno <- ncol(inflow)
 rowno <- nrow(inflow) - 24
+<<<<<<< HEAD
 rowno1 <- rowno + 12
 
 # retrieve the last column to have a full dataset, including year 2010 and 
 ts_inflow_full <- inflow[c(1:rowno1), colno-1] %>% 
+=======
+
+# retrieve the last column to have a full dataset, including year 2010 and 
+ts_inflow_full <- inflow[, colno-1] %>% 
+>>>>>>> bd5c639bf0cb29fc3ee4dea3e714104b1fc01a2b
   ts(start = c(1931, 1), frequency = 12)
 
 
@@ -52,12 +58,15 @@ ts_inflow_2009 <- inflow[c(1:rowno), colno-1] %>%
   ts(start = c(1931, 1), frequency = 12)
 
 tail(ts_inflow_2009)
+<<<<<<< HEAD
 
 # plot time series plot, ACF, and PACF
 par(mfrow = c(1,3))
 plot(ts_inflow_2009)
 acf(ts_inflow_full, lag.max = 40, ylim = c(-1, 1))
 pacf(ts_inflow_full, lag.max = 40, ylim = c(-1, 1))
+=======
+>>>>>>> bd5c639bf0cb29fc3ee4dea3e714104b1fc01a2b
 
 ```
 
@@ -71,6 +80,7 @@ inflow_2009_deseas <- ts_inflow_2009 %>%
   stl(s.window = "periodic") %>% 
   seasadj()
 
+<<<<<<< HEAD
 # examine the ts object to ensure that it is correct
 str(inflow_2009_deseas)
 
@@ -81,6 +91,14 @@ autoplot(inflow_2009_deseas) +
   ylab("Inflow Data Till 2009") +
   ggtitle("Comparison between Original and Deseasonalized Series")
   
+=======
+ts_inflow_2009_deseas <- stl(ts_inflow_2009, s.window = "periodic")
+
+str(ts_inflow_2009_deseas$time.series)
+plot(ts_inflow_2009_deseas$time.series[,2])
+
+autoplot()
+>>>>>>> bd5c639bf0cb29fc3ee4dea3e714104b1fc01a2b
 ```
 
 ## Part II: Forecasting with ARIMA models and its variations
