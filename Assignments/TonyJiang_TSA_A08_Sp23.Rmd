@@ -44,7 +44,11 @@ rowno1 <- rowno + 12
 
 # retrieve the last column to have a full dataset, including year 2010 
 # but excluding year 2011
-ts_inflow_full <- inflow[c(1:rowno1), colno-1] %>% 
+ts_inflow_full <- inflow[c(1:rowno1), colno-1] %>%
+    ts(start = c(1931, 1), frequency = 12)
+
+# retrieve the last column to have a full dataset, including year 2010 and 
+ts_inflow_full <- inflow[, colno-1] %>% 
   ts(start = c(1931, 1), frequency = 12)
 
 
@@ -55,7 +59,6 @@ ts_inflow_2009 <- inflow[c(1:rowno), colno-1] %>%
   ts(start = c(1931, 1), frequency = 12)
 
 tail(ts_inflow_2009)
-
 
 # plot time series plot, ACF, and PACF
 plot(ts_inflow_2009)
@@ -85,7 +88,7 @@ autoplot(inflow_2009_deseas) +
   autolayer(inflow_2009_deseas, series = "Deseasonalized Series", PI = FALSE) +
   ylab("Inflow Data Till 2009") +
   ggtitle("Comparison between Original and Deseasonalized Series")
-  
+
 ```
 
 ## Part II: Forecasting with ARIMA models and its variations
@@ -259,7 +262,6 @@ kbl(compare_scores,
                 stripe_color = "red",
                 stripe_index = which.min(compare_scores[,"RMSE"])
                 )
-
 
 ```
 
