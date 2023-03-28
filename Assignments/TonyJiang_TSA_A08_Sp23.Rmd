@@ -34,29 +34,26 @@ For all parts of the assignment prepare the data set such that the model conside
 
 Read the file into a data frame. Prepare your time series data vector such that observations start in January 2000 and end in December 2009. Make you sure you specify the **start=** and **frequency=** arguments. Plot the time series over time, ACF and PACF.
 
-```{r}
+```{r warning=FALSE}
 inflow <- read.delim(file = "./Data/inflowtimeseries.txt", 
-                     header = FALSE)
+                     header = FALSE) %>% 
+  separate(col = V1, into = c("Month", "Year", "v0"), sep = " ")
 
+inino <- which(inflow$Month == "Jan" & inflow$Year == "2000")
 colno <- ncol(inflow)
 rowno <- nrow(inflow) - 24
 rowno1 <- rowno + 12
 
 # retrieve the last column to have a full dataset, including year 2010 
 # but excluding year 2011
-ts_inflow_full <- inflow[c(1:rowno1), colno-1] %>%
-    ts(start = c(1931, 1), frequency = 12)
-
-# retrieve the last column to have a full dataset, including year 2010 and 
-ts_inflow_full <- inflow[, colno-1] %>% 
-  ts(start = c(1931, 1), frequency = 12)
-
+ts_inflow_full <- inflow[c(inino:rowno1), colno-1] %>%
+    ts(start = c(2000, 1), frequency = 12)
 
 str(ts_inflow_full)
 tail(ts_inflow_full)
 
-ts_inflow_2009 <- inflow[c(1:rowno), colno-1] %>% 
-  ts(start = c(1931, 1), frequency = 12)
+ts_inflow_2009 <- inflow[c(inino:rowno), colno-1] %>% 
+  ts(start = c(2000, 1), frequency = 12)
 
 tail(ts_inflow_2009)
 
@@ -99,11 +96,14 @@ Fit a non-seasonal ARIMA$(p,d,q)$ model using the auto.arima() function to the n
 
 ```{r}
 
-# model the inflow data till 2009
-arimaauto <- auto.arima(inflow_2009_deseas, seasonal = FALSE)
+# model and forecast the inflow data for year 2010
+inflow_2009_deseas <- ts_inflow_2009 %>% 
+  stl(s.window = "periodic") %>% 
+  seasadj()
 
-# forecast data in year 2010
-inflow_for <- forecast(arimaauto, h = 12) 
+inflow_for <- inflow_2009_deseas %>% 
+  auto.arima() %>% 
+  forecast(h = 12)
 
 # deseasonalize the original series
 inflow_2010_deseas <- ts_inflow_full %>% 
@@ -113,11 +113,14 @@ inflow_2010_deseas <- ts_inflow_full %>%
 # plot the forecast and original series together 
 inflow_for %>% 
   autoplot() +
-  autolayer(inflow_for, series = "Forecast Series", PI = FALSE) +
-  autolayer(inflow_2010_deseas, series = "Original Series") +
+  autolayer(inflow_for$mean, series = "Forecast Series", PI = FALSE) +
+  autolayer(window(inflow_2010_deseas, 
+                   start = c(2010, 1),
+                   end = c(2010, 12)
+                   ),
+            series = "Observed Deseasonalized Series in 2010") +
   ylab("Inflow Data till 2010") +
-  ggtitle("Comparison Between Original and Forecast Series") +
-  scale_x_continuous(breaks = seq(1930, 2010, by = 10))
+  ggtitle("Comparison Between Original and ARIMA(0,1,0) Forecast Series")
 
 ```
 
@@ -135,17 +138,13 @@ seasonalpart_2010 <- ts_inflow_full %>%
 
 # add the seasonal component of the last year to 
 # the forecast deseasonalized values 
-for_full_2010 <- seasonalpart_2010[(rowno+1):rowno1] + inflow_for$mean
+for_full_2010 <- seasonalpart_2010[c(121:132)] + inflow_for$mean
 
-# get the observed values of year 2010
-original_inflow_2010 <- ts_inflow_full[(rowno+1):rowno1] %>% 
-  ts(start = c(2010,1), frequency = 12)
-
-# plot the forecast series and observaed series
+# plot the forecast series and observed series
 for_full_2010 %>% 
   autoplot() + 
   autolayer(for_full_2010, series = "forecast seasonal series", PI = FALSE) +
-  autolayer(original_inflow_2010, series = "original seasonal series") +
+  autolayer(ts_inflow_full, series = "original seasonal series") +
   ylab("Inflow Data for Year 2010") +
   ggtitle("Comparison Between Forecast and Real Seasonal Series")
 ```
@@ -163,11 +162,10 @@ inflow_for_original <- ts_inflow_2009 %>%
 # plot the forecast series and the observed series together
 inflow_for_original %>% 
   autoplot() +
-  autolayer(inflow_for_original, series = "forecast series", PI = FALSE) +
+  autolayer(inflow_for_original$mean, series = "forecast series", PI = FALSE) +
   autolayer(ts_inflow_full, series = "original series") +
   ylab("Inflow Data till 2010") +
-  ggtitle("Comparison Between Original and Forecast Series") +
-  scale_x_continuous(breaks = seq(1930, 2010, by = 10))
+  ggtitle("Comparison Between Original and Forecast Series")
 
 ```
 
@@ -179,9 +177,9 @@ Compare the plots from Q4 and Q5 using the autoplot() function.
 
 # plot two forecast series and the observed series in the same plot to compare
 autoplot(for_full_2010) +
-  autolayer(inflow_for_original$mean, series = "one step forecast", CI = FALSE) +
+  autolayer(inflow_for_original$mean, series = "SARIMA Forecast", CI = FALSE) +
   autolayer(for_full_2010, series = "deseason + seasonality", CI = FALSE) +
-  autolayer(original_inflow_2010, series = "true series") +
+  autolayer(ts_inflow_full, series = "observed series") +
   ylab("Inflow Data in 2010") +
   ggtitle("Comparison Between 2 Forecast Series and Real Series")
 
@@ -216,10 +214,10 @@ Make one plot with the complete original seasonal historical data (Jan 2000 to D
 # plot all three forecast series and the observed series 
 # to compare their performances
 autoplot(ts_inflow_full) +
-  autolayer(ts_inflow_full, series = "reality") +
-  autolayer(for_full_2010, series = "deseason + seasonality forecast", PI = FALSE) +
-  autolayer(inflow_for_original, series = "one step forecast", PI = FALSE) +
-  autolayer(expo_smooth, series = "exponential smooth forecast", PI = FALSE) +
+  autolayer(ts_inflow_full, series = "Reality") +
+  autolayer(for_full_2010, series = "Deseason + Seasonality Forecast", PI = FALSE) +
+  autolayer(inflow_for_original$mean, series = "SARIMA Forecast", PI = FALSE) +
+  autolayer(expo_smooth, series = "Simple Exponential Smooth Forecast", PI = FALSE) +
   ylab("Inflow Data till 2010") +
   ggtitle("Comparison Between 3 Forecast Series and Real Series")
 
@@ -240,6 +238,10 @@ Now compute the following forecast metrics we learned in class: RMSE and MAPE,  
 ```{r}
 
 # get the metrics of the three forecast series
+original_inflow_2010 <- ts_inflow_full %>% 
+  window(start = c(2010, 1),
+         end = c(2010, 12))
+
 deandse_score <- accuracy(inflow_for$mean, original_inflow_2010)
 
 onestep_score <- accuracy(inflow_for_original$mean, original_inflow_2010)
