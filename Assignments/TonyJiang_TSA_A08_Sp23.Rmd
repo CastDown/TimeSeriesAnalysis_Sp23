@@ -146,6 +146,7 @@ for_full_2010 <- seasonalpart_2010[c(121:132)] + inflow_for$mean
 for_full_2010 %>% 
   autoplot() + 
   autolayer(for_full_2010, series = "ARIMA(0,1,0) forecast seasonal series", PI = FALSE) +
+  autolayer(for_full_2010, series = "forecast seasonal series", PI = FALSE) +
   autolayer(ts_inflow_full, series = "original seasonal series") +
   ylab("Inflow Data for Year 2010") +
   ggtitle("Comparison Between Forecast and Real Seasonal Series")
@@ -166,6 +167,8 @@ inflow_for_original %>%
   autoplot() +
   autolayer(inflow_for_original$mean, series = "SARIMA Series", PI = FALSE) +
   autolayer(ts_inflow_full, series = "Observed Series") +
+  autolayer(inflow_for_original$mean, series = "forecast series", PI = FALSE) +
+  autolayer(ts_inflow_full, series = "original series") +
   ylab("Inflow Data till 2010") +
   ggtitle("Comparison Between Original and Forecast Series")
 
@@ -182,6 +185,8 @@ autoplot(for_full_2010) +
   autolayer(inflow_for_original$mean, series = "SARIMA Forecast", CI = FALSE) +
   autolayer(for_full_2010, series = "ARIMA(0,1,0)", CI = FALSE) +
   autolayer(ts_inflow_full, series = "Observed Series") +
+  autolayer(for_full_2010, series = "deseason + seasonality", CI = FALSE) +
+  autolayer(ts_inflow_full, series = "observed series") +
   ylab("Inflow Data in 2010") +
   ggtitle("Comparison Between 2 Forecast Series and Real Series")
 
@@ -218,6 +223,7 @@ Make one plot with the complete original seasonal historical data (Jan 2000 to D
 autoplot(ts_inflow_full) +
   autolayer(ts_inflow_full, series = "Reality") +
   autolayer(for_full_2010, series = "ARIMA(0,1,0) Forecast", PI = FALSE) +
+  autolayer(for_full_2010, series = "Deseason + Seasonality Forecast", PI = FALSE) +
   autolayer(inflow_for_original$mean, series = "SARIMA Forecast", PI = FALSE) +
   autolayer(expo_smooth, series = "Simple Exponential Smooth Forecast", PI = FALSE) +
   ylab("Inflow Data till 2010") +
